@@ -44,8 +44,8 @@ export default class SavePlugin {
           } else {
             saveFunc.call(
               this.imager,
-              this.imager.$imageElement.attr("data-imager-id"),
-              this.imager.$imageElement.attr("src"),
+              this.imager.getImageId(),
+              this.imager.getImageData(),
               (savedImageUrl) => {
                 this.imager.stopEditing();
                 // for uploaded images - change src to url returned from the server

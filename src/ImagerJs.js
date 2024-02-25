@@ -10,9 +10,10 @@ import ToolbarPlugin from "./plugins/toolbar/Toolbar";
 import { UndoPlugin } from "./plugins/undo/Undo";
 import * as util from "./util/Util";
 import "./imagerJs.css";
-import './assets/fontello/css/fontello.css';
+import "./assets/fontello/css/fontello.css";
 
 const imagerInstances = [];
+
 const pluginsCatalog = {
   // Modal,
   Crop: CropPlugin,
@@ -112,11 +113,6 @@ const pluginsCatalog = {
 export default class Imager {
   constructor($rootElement, options) {
     this.$rootElement = $($rootElement);
-    this.$imageElement = $(
-      `<img id="${nanoid()}" src="" style="min-width: 300px; min-height: 200px; width: 300px; position: absolute">`
-    );
-
-    this.$imageElement.appendTo(this.$rootElement);
 
     this.defaultOptions = {
       saveData: undefined,
@@ -129,10 +125,13 @@ export default class Imager {
       editModeCss: {
         border: "1px solid white",
       },
-      pluginsConfig: {},
+      plugins: {},
       detectTouch: null,
       waitingCursor: "wait",
-      imageSizeForPerformanceWarning: 1000000, // 1 MB
+      imageSizeForPerformanceWarning: 5000000, // 5 MB
+
+      height: 500,
+      width: 500,
       maxImageWidth: 2048,
       maxImageHeight: 2048,
     };
@@ -141,6 +140,13 @@ export default class Imager {
     this.options = $.extend(true, this.defaultOptions, options);
 
     this.debug = false;
+
+    const { width, height } = this.options;
+    this.$imageElement = $(
+      `<img id="${nanoid()}" style="min-width: ${width}px; width: ${width}px; min-height: ${height}px; height: ${height}px; position: absolute; opacity: 0">`
+    );
+
+    this.$imageElement.appendTo(this.$rootElement);
 
     /**
      * Whether to show temporary canvases that are used to render some image states
@@ -271,12 +277,18 @@ export default class Imager {
    * Iterates through plugins array from config and instantiates them.
    */
   instantiatePlugins(plugins) {
-    this.pluginsInstances = Object.entries(plugins).map(([name, cls]) => {
-      const instance = new cls(this, this.options.pluginsConfig[name] || {});
-      instance.__name = name;
-      return instance;
-    });
-
+    this.pluginsInstances = Object.entries(plugins)
+      .map(([name, cls]) => {
+        const options = this.options.plugins[name];
+        // plugin can be disabled using this.options.plugins[name] = false
+        if (options == null || options) {
+          const instance = new cls(this, options || {});
+          instance.__name = name;
+          return instance;
+        }
+      })
+      .filter(Boolean);
+    console.log(this.pluginsInstances.map((t) => t.__name));
     this.pluginsInstances.sort(this.pluginSort);
   }
 
@@ -369,6 +381,14 @@ export default class Imager {
       console.error("Unsupported image `src`!");
       return $.when("");
     }
+  }
+
+  getImageId() {
+    return this.$imageElement.attr("data-imager-id");
+  }
+
+  getImageData() {
+    return this.$imageElement.attr("src");
   }
 
   /**

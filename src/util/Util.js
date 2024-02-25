@@ -406,11 +406,14 @@ export function removeOverlayMessage(element) {
  * @param H2 resized height
  */
 export function resizeImage(canvas, W, H, W2, H2) {
-  var time1 = Date.now();
+  const ctx = canvas.getContext("2d", {willReadFrequently: true});
+  
   W2 = Math.round(W2);
   H2 = Math.round(H2);
-  var img = canvas.getContext("2d").getImageData(0, 0, W, H);
-  var img2 = canvas.getContext("2d").getImageData(0, 0, W2, H2);
+
+  var img = ctx.getImageData(0, 0, W, H);
+  var img2 = ctx.getImageData(0, 0, W2, H2);
+
   var data = img.data;
   var data2 = img2.data;
   var ratio_w = W / W2;
@@ -462,6 +465,7 @@ export function resizeImage(canvas, W, H, W2, H2) {
       data2[x2 + 3] = gx_a / weights_alpha;
     }
   }
+
   //console.log("hermite = " + (Math.round(Date.now() - time1) / 1000) + " s");
   canvas.getContext("2d").clearRect(0, 0, Math.max(W, W2), Math.max(H, H2));
   canvas.width = W2;
