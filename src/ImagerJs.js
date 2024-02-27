@@ -141,13 +141,6 @@ export default class Imager {
 
     this.debug = false;
 
-    const { width, height } = this.options;
-    this.$imageElement = $(
-      `<img id="${nanoid()}" style="min-width: ${width}px; width: ${width}px; min-height: ${height}px; height: ${height}px; position: absolute; opacity: 0">`
-    );
-
-    this.$imageElement.appendTo(this.$rootElement);
-
     /**
      * Whether to show temporary canvases that are used to render some image states
      * before final rendering to the canvas that user sees.
@@ -184,17 +177,6 @@ export default class Imager {
 
     // detect Platform
     this.detectPlatform();
-
-    this.$originalImage = this.$imageElement.clone();
-
-    // this.handleImageElementSrcChanged();
-
-    /**
-     * Imager will instantiate all plugins and store them here.
-     * @type {Object|null}
-     */
-    this.pluginsInstances = null;
-    this.instantiatePlugins(pluginsCatalog);
   }
 
   destroy() {
@@ -277,7 +259,7 @@ export default class Imager {
    * Iterates through plugins array from config and instantiates them.
    */
   instantiatePlugins(plugins) {
-    this.pluginsInstances = Object.entries(plugins)
+    const pluginsInstances = Object.entries(plugins)
       .map(([name, cls]) => {
         const options = this.options.plugins[name];
         // plugin can be disabled using this.options.plugins[name] = false
@@ -288,8 +270,9 @@ export default class Imager {
         }
       })
       .filter(Boolean);
-    console.log(this.pluginsInstances.map((t) => t.__name));
-    this.pluginsInstances.sort(this.pluginSort);
+    pluginsInstances.sort(this.pluginSort);
+
+    return pluginsInstances;
   }
 
   /**
@@ -387,7 +370,11 @@ export default class Imager {
     return this.$imageElement.attr("data-imager-id");
   }
 
-  getImageData() {
+  async getImageData() {
+    for (const t of this.pluginsInstances) {
+      if (t.applyChanges) await t.applyChanges();
+    }
+
     return this.$imageElement.attr("src");
   }
 
@@ -534,6 +521,20 @@ export default class Imager {
       this.handleImageElementSrcChanged();
       this.on("ready", onImagerReady);
     };
+
+    const { width, height } = this.options;
+    this.$imageElement = $(
+      `<img id="${nanoid()}" style="min-width: ${width}px; width: ${width}px; min-height: ${height}px; height: ${height}px; position: absolute; opacity: 0">`
+    );
+
+    this.$imageElement.appendTo(this.$rootElement);
+    this.$originalImage = this.$imageElement.clone();
+
+    /**
+     * Imager will instantiate all plugins and store them here.
+     * @type {Object|null}
+     */
+    this.pluginsInstances = this.instantiatePlugins(pluginsCatalog);
 
     setTimeout(() => {
       this.$imageElement.attr("src", file);
@@ -1178,7 +1179,7 @@ export default class Imager {
   remove(removeImage) {
     this.trigger("remove");
 
-    this.$imageElement.removeAttr("imager-attached");
+    this.$imageElement.remove();
     this.stopEditing();
     this.showOriginalImage();
     var index = imagerInstances.indexOf(this);

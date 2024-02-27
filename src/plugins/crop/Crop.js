@@ -1,6 +1,6 @@
 import { translate } from "../../Translations";
 import * as util from "../../util/Util";
-import './Crop.css';
+import "./Crop.css";
 
 const MOUSE_DOWN = util.mouseDown("imagerjsCrop");
 const MOUSE_UP = util.mouseUp("imagerjsCrop");
@@ -52,7 +52,7 @@ export default class CropPlugin {
         classes: "btn-crop",
         iconClasses: "icon-scissors",
         tooltip: translate("Crop"),
-        enabledHandler: () =>  {
+        enabledHandler: () => {
           if (this.sizeBeforeCrop) {
             this.imager.setPreviewSize(
               this.sizeBeforeCrop.width,
@@ -67,25 +67,8 @@ export default class CropPlugin {
           this.startCropping();
         },
 
-        applyHandler: () =>  {
-          this.sizeBeforeCrop = this.imager.getPreviewSize();
-
-          this.stopCropping();
-          this.enableRendering = true;
-
-          this.imager.setPreviewSize(this.croppedWidth, this.croppedHeight);
-
-          this.imager.setWaiting(true);
-
-          setTimeout(() =>  {
-            this.imager.commitChanges("Crop");
-            this.reset();
-            this.imager.render();
-
-            this.imager.setWaiting(false);
-          }, 50);
-        },
-        rejectHandler: () =>  {
+        applyHandler: () => this.applyChanges(),
+        rejectHandler: () => {
           this.stopCropping();
 
           this.croppedWidth = null;
@@ -97,6 +80,28 @@ export default class CropPlugin {
         },
       },
     ];
+  }
+
+  async applyChanges() {
+    this.sizeBeforeCrop = this.imager.getPreviewSize();
+
+    this.stopCropping();
+    this.enableRendering = true;
+
+    this.imager.setPreviewSize(this.croppedWidth, this.croppedHeight);
+
+    this.imager.setWaiting(true);
+
+    return new Promise((res) =>
+      setTimeout(() => {
+        this.imager.commitChanges("Crop");
+        this.reset();
+        this.imager.render();
+
+        this.imager.setWaiting(false);
+        res();
+      }, 50)
+    );
   }
 
   startCropping() {
@@ -149,7 +154,7 @@ export default class CropPlugin {
       });
 
       this.adjustPreview();
-    }
+    };
 
     $corners.on(MOUSE_DOWN, (clickEvent) => {
       clickEvent.stopPropagation();
@@ -190,7 +195,7 @@ export default class CropPlugin {
           if (this.croppedTop + this.croppedHeight > this.originalHeight) {
             this.croppedHeight = this.originalHeight - this.croppedTop;
           }
-        }
+        };
 
         if ($(controlItem).hasClass("crop-top-left")) {
           this.croppedLeft = startControlsLeft + diffLeft;
@@ -277,13 +282,13 @@ export default class CropPlugin {
         return false;
       });
 
-      $body.on(MOUSE_UP, () =>  {
+      $body.on(MOUSE_UP, () => {
         $body.off(MOUSE_MOVE);
         $body.off(MOUSE_UP);
       });
     });
 
-    $selection.on(MOUSE_DOWN,  (clickEvent) => {
+    $selection.on(MOUSE_DOWN, (clickEvent) => {
       var startPos = util.getEventPosition(clickEvent);
 
       var startControlsLeft =
@@ -321,7 +326,7 @@ export default class CropPlugin {
         return false;
       });
 
-      $body.on(MOUSE_UP, () =>  {
+      $body.on(MOUSE_UP, () => {
         $body.off(MOUSE_MOVE);
         $body.off(MOUSE_UP);
       });
