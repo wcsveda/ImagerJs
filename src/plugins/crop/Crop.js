@@ -334,10 +334,10 @@ export default class CropPlugin {
   }
 
   stopCropping() {
-    this.$preview.remove();
+    this.$preview?.remove();
     this.$preview = null;
 
-    this.$cropControls.remove();
+    this.$cropControls?.remove();
     this.$cropControls = null;
 
     this.renderCropped = true;

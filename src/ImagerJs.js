@@ -495,8 +495,17 @@ export default class Imager {
     return deferred.promise();
   }
 
+  notLoading() {
+    if(!this.$loadingElement) return;
+    this.$loadingElement.remove();
+    this.$loadingElement = null;
+  }
+
   async load(file) {
     if (!file) throw new Error("file is required");
+
+    this.$loadingElement = $('<h1 style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index: 1000">LOADING</h1>');
+    this.$loadingElement.appendTo(this.$rootElement);
 
     if (file instanceof File) {
       const orig = file;
@@ -613,6 +622,7 @@ export default class Imager {
     }
 
     this.trigger("historyChange");
+    this.notLoading();
   }
 
   stopEditing() {
@@ -1187,6 +1197,8 @@ export default class Imager {
 
     this.$originalImage = null;
     this.pluginsInstances = null;
+
+    this.notLoading();
 
     if (removeImage) {
       this.$imageElement.remove();
