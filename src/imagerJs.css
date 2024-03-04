@@ -25,14 +25,6 @@
   position: relative;
 }
 
-.imager-edit-container {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  justify-content: flex-start;
-  outline: none;
-  position: relative;
-}
 
 .imager-edit-canvas {
   left: 0;

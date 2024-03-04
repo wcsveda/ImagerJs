@@ -30,6 +30,11 @@ const MOUSE_MOVE = mouseMove("imagerjsResize");
  * @memberof ImagerJs.plugins
  */
 export default class ResizePlugin {
+  /**
+   *
+   * @param {import('../../ImagerJs').default} imagerInstance
+   * @param {*} options
+   */
   constructor(imagerInstance, options) {
     this.imager = imagerInstance;
 
@@ -85,55 +90,46 @@ export default class ResizePlugin {
 
     this.imager.$editContainer.append($resizeSquare);
 
-    var $body = $("body");
+    const $body = $("body");
+
+    const update = () => {
+      const box = this.imager.canvas.getBoundingClientRect();
+      $resizeSquare.css({
+        left: box.x + box.width,
+        top: box.y + box.height,
+      });
+
+      return box;
+    };
+
+    update();
+
+    this.imager.on("historyChange", update);
 
     $resizeSquare.on(MOUSE_DOWN, (downEvent) => {
-      var startPos = getEventPosition(downEvent);
-
-      var startDimensions = this.imager.getPreviewSize();
-
-      const ratioWidth = startDimensions.height / startDimensions.width;
-      const ratioHeight = startDimensions.width / startDimensions.height;
+      const start = update();
 
       $body.on(MOUSE_MOVE, (moveEvent) => {
-        var movePos = getEventPosition(moveEvent);
+        let { left, top } = getEventPosition(moveEvent);
 
-        var leftDiff = movePos.left - startPos.left;
-        var topDiff = movePos.top - startPos.top;
+        let [nw, nh] = [left - start.x, top - start.y];
+        const [minW, minH] = [
+          this.imager.options.minWidth || 100,
+          this.imager.options.minHeight || 100,
+        ];
 
-        if (this.options.doubleDiff) {
-          leftDiff *= 2;
-          topDiff *= 2;
+        if (nw < minW) {
+          nw = minW;
+          left = start.x + minW;
         }
 
-        var newWidth = startDimensions.width + leftDiff;
-        var newHeight = startDimensions.height + topDiff;
-
-        var fitSize = this.calcAspectRatio(
-          startDimensions.width,
-          startDimensions.height,
-          newWidth,
-          newHeight
-        );
-
-        newWidth = fitSize.width;
-        newHeight = fitSize.height;
-
-        if (newWidth < this.options.minWidth) {
-          newWidth = this.options.minWidth;
+        if (nh < minH) {
+          nh = minH;
+          top = start.y + minH;
         }
 
-        if (newHeight < this.options.minHeight) {
-          newHeight = this.options.minHeight;
-        }
-
-        this.imager.setPreviewSize(newWidth, newHeight);
-        $resizeSquare.css({
-          right: null,
-          bottom: null,
-          left: newWidth,
-          top: newHeight,
-        });
+        $resizeSquare.css({ left, top });
+        this.imager.setPreviewSize(nw, nh);
 
         moveEvent.stopPropagation();
         moveEvent.preventDefault();
@@ -143,6 +139,7 @@ export default class ResizePlugin {
       $body.on(MOUSE_UP, (upEvent) => {
         $body.off(MOUSE_UP);
         $body.off(MOUSE_MOVE);
+        this.imager.commitChanges("Resize");
       });
 
       downEvent.stopPropagation();

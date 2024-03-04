@@ -135,6 +135,8 @@ export default class Imager {
       width: 500,
       maxImageWidth: 2048,
       maxImageHeight: 2048,
+      minHeight: 100,
+      minWidth: 100
     };
 
     options = options ? options : {};
@@ -380,6 +382,8 @@ export default class Imager {
       if (t.applyChanges) await t.applyChanges();
     }
 
+    this.stopEditing();
+
     return this.$imageElement.attr("src");
   }
 
@@ -546,20 +550,6 @@ export default class Imager {
     this.$imageElement.appendTo(this.$rootElement);
     this.$originalImage = this.$imageElement.clone();
 
-    mount(
-      this.$rootElement[0],
-      el(
-        "div",
-        text("size: "),
-        this.previewWidthEl,
-        text("x"),
-        this.previewHeightEl,
-        text(", Aspect Ratio: "),
-        this.aspectRatioEl,
-        { style: "display: flex; align-items-center; gap: 4px; font-family: monospace; padding: 2px; font-size: 14px" }
-      )
-    );
-
     /**
      * Imager will instantiate all plugins and store them here.
      * @type {Object|null}
@@ -606,13 +596,32 @@ export default class Imager {
     const innerId = nanoid();
 
     this.$rootElement.append(`
-    <div id="${outerId}" class="imager-edit-outer-container">
-    <div id="${innerId}" class="imager-edit-container" tabindex="1"></div>
+    <div id="${outerId}" class="imager-edit-outer-container" style="height: 100%">
+    <div id="${innerId}" class="imager-edit-container position-relative" tabindex="1"></div>
     </div>
     `);
 
     this.$editOuterContainer = $(`#${outerId}`);
     this.$editContainer = $(`#${innerId}`);
+
+    mount(
+      this.$editOuterContainer[0],
+      (this.detailsEl = el(
+        "div",
+        text("size: "),
+        this.previewWidthEl,
+        text("x"),
+        this.previewHeightEl,
+        text(", Aspect Ratio: "),
+        this.aspectRatioEl,
+        text(`, min-size: ${this.options.minWidth}x${this.options.minHeight}`),
+        {
+          style:
+            "display: flex; align-items-center; gap: 4px; font-family: monospace; padding: 2px; font-size: 14px",
+        }
+      )), this.$editContainer[0]
+    );
+
 
     if (this.options.editModeCss) {
       this.$editContainer.css(this.options.editModeCss);
@@ -698,6 +707,7 @@ export default class Imager {
 
     this.$editContainer.remove();
     this.$editOuterContainer.remove();
+    this.detailsEl.remove();
 
     this.$editOuterContainer = null;
     this.$editContainer = null;

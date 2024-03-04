@@ -1,5 +1,5 @@
 .resize-square {
-  position: absolute;
+  position: fixed;
   background: white;
   border: 1px solid black;
   z-index: 1101;
