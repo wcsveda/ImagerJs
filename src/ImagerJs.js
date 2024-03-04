@@ -11,6 +11,7 @@ import { UndoPlugin } from "./plugins/undo/Undo";
 import * as util from "./util/Util";
 import "./imagerJs.css";
 import "./assets/fontello/css/fontello.css";
+import { el, mount, text } from "redom";
 
 const imagerInstances = [];
 
@@ -138,6 +139,10 @@ export default class Imager {
 
     options = options ? options : {};
     this.options = $.extend(true, this.defaultOptions, options);
+
+    this.previewWidthEl = text();
+    this.previewHeightEl = text();
+    this.aspectRatioEl = text();
 
     this.debug = false;
 
@@ -496,7 +501,7 @@ export default class Imager {
   }
 
   notLoading() {
-    if(!this.$loadingElement) return;
+    if (!this.$loadingElement) return;
     this.$loadingElement.remove();
     this.$loadingElement = null;
   }
@@ -504,7 +509,9 @@ export default class Imager {
   async load(file) {
     if (!file) throw new Error("file is required");
 
-    this.$loadingElement = $('<h1 style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index: 1000">LOADING</h1>');
+    this.$loadingElement = $(
+      '<h1 style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index: 1000">LOADING</h1>'
+    );
     this.$loadingElement.appendTo(this.$rootElement);
 
     if (file instanceof File) {
@@ -539,6 +546,20 @@ export default class Imager {
     this.$imageElement.appendTo(this.$rootElement);
     this.$originalImage = this.$imageElement.clone();
 
+    mount(
+      this.$rootElement[0],
+      el(
+        "div",
+        text("size: "),
+        this.previewWidthEl,
+        text("x"),
+        this.previewHeightEl,
+        text(", Aspect Ratio: "),
+        this.aspectRatioEl,
+        { style: "display: flex; align-items-center; gap: 4px; font-family: monospace; padding: 2px; font-size: 14px" }
+      )
+    );
+
     /**
      * Imager will instantiate all plugins and store them here.
      * @type {Object|null}
@@ -567,6 +588,17 @@ export default class Imager {
       );
     }
 
+    const imageWidth = this.$imageElement.width();
+    const imageHeight = this.$imageElement.height();
+
+    const imageNaturalWidth = this.$imageElement[0].naturalWidth;
+    const imageNaturalHeight = this.$imageElement[0].naturalHeight;
+
+    this.$imageElement.css({
+      width: Math.min(imageWidth, imageNaturalWidth),
+      height: Math.min(imageHeight, imageNaturalHeight),
+    });
+
     this.originalPreviewWidth = this.$imageElement.width();
     this.originalPreviewHeight = this.$imageElement.height();
 
@@ -587,8 +619,6 @@ export default class Imager {
     }
 
     this._createEditCanvas();
-
-    this.adjustEditContainer();
 
     this.trigger("editStart");
 
@@ -771,6 +801,7 @@ export default class Imager {
     $canvas.css({
       width: imageWidth,
       height: imageHeight,
+      backgroundColor: this.options.background || null,
     });
 
     this.canvas = $canvas[0];
@@ -1027,11 +1058,6 @@ export default class Imager {
    * @param {number} height
    */
   setPreviewSize(width, height) {
-    this.$editContainer.css({
-      width: width,
-      height: height,
-    });
-
     this.$imageElement.css({
       width: width,
       height: height,
@@ -1047,6 +1073,32 @@ export default class Imager {
 
     this.originalPreviewWidth = this.$imageElement.width();
     this.originalPreviewHeight = this.$imageElement.height();
+  }
+
+  updateAspectRatio() {
+    this.aspectRatioEl.textContent = (
+      this.originalPreviewWidth / this.originalPreviewHeight
+    ).toFixed(2);
+  }
+
+  get originalPreviewWidth() {
+    return this._originalPreviewWidth;
+  }
+
+  set originalPreviewWidth(value) {
+    this.previewWidthEl.textContent = String(value);
+    this._originalPreviewWidth = value;
+    this.updateAspectRatio();
+  }
+
+  get originalPreviewHeight() {
+    return this._originalPreviewHeight;
+  }
+
+  set originalPreviewHeight(value) {
+    this.previewHeightEl.textContent = String(value);
+    this._originalPreviewHeight = value;
+    this.updateAspectRatio();
   }
 
   getPreviewSize() {
@@ -1134,23 +1186,6 @@ export default class Imager {
           this.canvas.height
         );
       }
-    }
-  }
-
-  /**
-   * Positions $editContained with absolute coordinates
-   * to be on top of $imageElement.
-   */
-  adjustEditContainer() {
-    var imageOffset = this.$imageElement.offset();
-
-    if (this.$editContainer) {
-      this.$editContainer.css({
-        // left: imageOffset.left,
-        // top: imageOffset.top,
-        width: this.$imageElement.width(),
-        height: this.$imageElement.height(),
-      });
     }
   }
 

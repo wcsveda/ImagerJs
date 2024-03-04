@@ -5,7 +5,6 @@ import {
   mouseUp,
 } from "../../util/Util";
 import "./Resize.css";
-import { translate } from "../../Translations";
 
 const MOUSE_DOWN = mouseDown("imagerjsResize");
 const MOUSE_UP = mouseUp("imagerjsResize");
